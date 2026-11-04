@@ -54,7 +54,7 @@ class _CalculadoraPorcentajeScreenState
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Margen superior para dar espacio al logo de la imagen de fondo
-                const SizedBox(height: 180),
+                const SizedBox(height: 120),
 
                 const Text(
                   'Calculadora de Porcentajes',
