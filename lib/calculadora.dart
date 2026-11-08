@@ -14,6 +14,9 @@ class _CalculadoraPorcentajeScreenState
   final TextEditingController _porcentajeController = TextEditingController();
 
   double? _resultado;
+  
+  // Lista local para almacenar el historial de cálculos
+  final List<String> _historial = [];
 
   void _calcularPorcentaje() {
     final double? numero = double.tryParse(_numeroController.text);
@@ -22,9 +25,27 @@ class _CalculadoraPorcentajeScreenState
     setState(() {
       if (numero != null && porcentaje != null) {
         _resultado = (numero * porcentaje) / 100;
+        
+        // Formamos el texto del cálculo realizado
+        String registro = '$porcentaje% de $numero = ${_resultado!.toStringAsFixed(2)}';
+        
+        // Evitamos duplicar exactamente el último registro si es idéntico
+        if (_historial.isEmpty || _historial.first != registro) {
+          _historial.insert(0, registro); // Inserta el más reciente arriba
+        }
       } else {
         _resultado = null;
       }
+    });
+  }
+
+  // Función para limpiar el historial
+  void _limpiarHistorial() {
+    setState(() {
+      _historial.clear();
+      _resultado = null;
+      _numeroController.clear();
+      _porcentajeController.clear();
     });
   }
 
@@ -53,8 +74,8 @@ class _CalculadoraPorcentajeScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Margen superior para dar espacio al logo de la imagen de fondo
-                const SizedBox(height: 120),
+                // Espacio superior para el logo del fondo
+                const SizedBox(height: 160),
 
                 const Text(
                   'Calculadora de Porcentajes',
@@ -65,7 +86,7 @@ class _CalculadoraPorcentajeScreenState
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 24),
 
                 // Campo 1: Número principal
                 TextField(
@@ -92,8 +113,9 @@ class _CalculadoraPorcentajeScreenState
                     filled: true,
                     fillColor: const Color(0xFF0F172A).withOpacity(0.7),
                   ),
+                  onChanged: (_) => _calcularPorcentaje(),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
                 // Campo 2: Porcentaje a calcular
                 TextField(
@@ -120,31 +142,11 @@ class _CalculadoraPorcentajeScreenState
                     filled: true,
                     fillColor: const Color(0xFF0F172A).withOpacity(0.7),
                   ),
+                  onChanged: (_) => _calcularPorcentaje(),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
-                // Botón de calcular
-                ElevatedButton(
-                  onPressed: _calcularPorcentaje,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.cyanAccent,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Calcular',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Tarjeta de Resultado
+                // Tarjeta de Resultado Actual
                 Card(
                   elevation: 6,
                   color: const Color(0xFF0F172A).withOpacity(0.85),
@@ -153,20 +155,20 @@ class _CalculadoraPorcentajeScreenState
                     side: const BorderSide(color: Colors.cyanAccent, width: 0.5),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: const EdgeInsets.all(20.0),
                     child: Column(
                       children: [
                         const Text(
                           'Resultado',
-                          style: TextStyle(fontSize: 18, color: Colors.white70),
+                          style: TextStyle(fontSize: 16, color: Colors.white70),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
                         Text(
                           _resultado != null
                               ? _resultado!.toStringAsFixed(2)
                               : '0.00',
                           style: const TextStyle(
-                            fontSize: 36,
+                            fontSize: 32,
                             fontWeight: FontWeight.bold,
                             color: Colors.cyanAccent,
                           ),
@@ -175,6 +177,72 @@ class _CalculadoraPorcentajeScreenState
                     ),
                   ),
                 ),
+                const SizedBox(height: 24),
+
+                // Sección del Historial
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Historial de cálculos',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (_historial.isNotEmpty)
+                      TextButton.icon(
+                        onPressed: _limpiarHistorial,
+                        icon: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 20),
+                        label: const Text(
+                          'Limpiar',
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Contenedor dinámico del historial con scroll seguro
+                _historial.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20.0),
+                        child: Text(
+                          'No hay cálculos recientes',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.white54, fontStyle: FontStyle.italic),
+                        ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true, // Se adapta al contenido dentro del SingleChildScrollView
+                        physics: const NeverScrollableScrollPhysics(), // Evita conflictos de scroll
+                        itemCount: _historial.length,
+                        itemBuilder: (context, index) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0F172A).withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white12),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.history, color: Colors.cyanAccent, size: 18),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                 child: Text(
+                                    _historial[index],
+                                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                const SizedBox(height: 30),
               ],
             ),
           ),
