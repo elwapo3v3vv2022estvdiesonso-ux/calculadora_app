@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart'; // <--- Importa Hive
 import 'bienvenida.dart';
 
-void main() {
+void main() async {
+  // Aseguramos que los widgets estén ligados antes de inicializar servicios nativos
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializamos Hive para Flutter
+  await Hive.initFlutter();
+
   runApp(const MiCalculadoraApp());
 }
 

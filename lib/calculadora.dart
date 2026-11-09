@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class CalculadoraPorcentajeScreen extends StatefulWidget {
   const CalculadoraPorcentajeScreen({super.key});
@@ -18,26 +19,52 @@ class _CalculadoraPorcentajeScreenState
   
   // Lista local para almacenar el historial de cálculos
   final List<String> _historial = [];
+  static const String _boxName = 'historial_box';
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarHistorialDeHive(); // <--- Carga los datos al iniciar la pantalla
+  }
+  
+  Future<void> _cargarHistorialDeHive() async {
+    // Abrimos la caja de almacenamiento local
+    var box = await Hive.openBox(_boxName);
+    setState(() {
+      // Recuperamos la lista guardada previamente
+      List<dynamic>? historialGuardado = box.get('historial_key');
+      if (historialGuardado != null) {
+        _historial.clear();
+        // Convertimos los datos recuperados a una lista de Strings
+        _historial.addAll(historialGuardado.map((e) => e.toString()).toList());
+      }
+    });
+  }
+  
+  Future<void> _guardarHistorialEnHive() async {
+    var box = await Hive.openBox(_boxName);
+    // Guardamos la lista completa actual en la caja local
+    await box.put('historial_key', _historial);
+  }
 
   // Función que se ejecuta unícamente al presionar el botón "Calcular"
-  void _calcularYGuardar() {
+ void _calcularYGuardar() {
     final double? numero = double.tryParse(_numeroController.text);
     final double? porcentaje = double.tryParse(_porcentajeController.text);
 
     setState(() {
       if (numero != null && porcentaje != null) {
-        // Realizamos el cálculo
         _resultado = (numero * porcentaje) / 100;
         
-        // Formamos el texto del cálculo realizado
         String registro = '$porcentaje% de $numero = ${_resultado!.toStringAsFixed(2)}';
         
-        // Guardamos en el historial solo cuando se presiona el botón
         if (_historial.isEmpty || _historial.first != registro) {
-          _historial.insert(0, registro); // Inserta el más reciente arriba
+          _historial.insert(0, registro);
+          
+          // <--- LLAMAMOS A HIVE PARA GUARDAR LOCALMENTE --->
+          _guardarHistorialEnHive();
         }
       } else {
-        // Si hay campos vacíos o datos inválidos, mostramos una alerta visual simple
         _resultado = null;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -51,13 +78,17 @@ class _CalculadoraPorcentajeScreenState
   }
 
   // Función para limpiar el historial y los campos
-  void _limpiarTodo() {
+ void _limpiarTodo() async {
     setState(() {
       _historial.clear();
       _resultado = null;
       _numeroController.clear();
       _porcentajeController.clear();
     });
+
+    // <--- BORRAMOS LOS DATOS DE LA CAJA DE HIVE --->
+    var box = await Hive.openBox(_boxName);
+    await box.clear();
   }
 
   @override
@@ -219,7 +250,7 @@ class _CalculadoraPorcentajeScreenState
                     const Text(
                       'Historial de cálculos',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -230,7 +261,7 @@ class _CalculadoraPorcentajeScreenState
                         icon: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 20),
                         label: const Text(
                           'Limpiar',
-                          style: TextStyle(color: Colors.redAccent),
+                          style: TextStyle(color: Colors.redAccent,fontSize: 16),
                         ),
                       ),
                   ],
