@@ -10,6 +10,7 @@ class CalculadoraPorcentajeScreen extends StatefulWidget {
 
 class _CalculadoraPorcentajeScreenState
     extends State<CalculadoraPorcentajeScreen> {
+  // Controladores para leer el texto de los campos
   final TextEditingController _numeroController = TextEditingController();
   final TextEditingController _porcentajeController = TextEditingController();
 
@@ -18,29 +19,39 @@ class _CalculadoraPorcentajeScreenState
   // Lista local para almacenar el historial de cálculos
   final List<String> _historial = [];
 
-  void _calcularPorcentaje() {
+  // Función que se ejecuta unícamente al presionar el botón "Calcular"
+  void _calcularYGuardar() {
     final double? numero = double.tryParse(_numeroController.text);
     final double? porcentaje = double.tryParse(_porcentajeController.text);
 
     setState(() {
       if (numero != null && porcentaje != null) {
+        // Realizamos el cálculo
         _resultado = (numero * porcentaje) / 100;
         
         // Formamos el texto del cálculo realizado
         String registro = '$porcentaje% de $numero = ${_resultado!.toStringAsFixed(2)}';
         
-        // Evitamos duplicar exactamente el último registro si es idéntico
+        // Guardamos en el historial solo cuando se presiona el botón
         if (_historial.isEmpty || _historial.first != registro) {
           _historial.insert(0, registro); // Inserta el más reciente arriba
         }
       } else {
+        // Si hay campos vacíos o datos inválidos, mostramos una alerta visual simple
         _resultado = null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor, ingresa números válidos en ambos campos.'),
+            backgroundColor: Colors.redAccent,
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     });
   }
 
-  // Función para limpiar el historial
-  void _limpiarHistorial() {
+  // Función para limpiar el historial y los campos
+  void _limpiarTodo() {
     setState(() {
       _historial.clear();
       _resultado = null;
@@ -74,7 +85,7 @@ class _CalculadoraPorcentajeScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Espacio superior para el logo del fondo
+                // Espacio superior para acomodar el logo del fondo
                 const SizedBox(height: 160),
 
                 const Text(
@@ -113,7 +124,7 @@ class _CalculadoraPorcentajeScreenState
                     filled: true,
                     fillColor: const Color(0xFF0F172A).withOpacity(0.7),
                   ),
-                  onChanged: (_) => _calcularPorcentaje(),
+                  // Nota: Eliminamos el onChanged para que no calcule automáticamente al escribir
                 ),
                 const SizedBox(height: 16),
 
@@ -142,7 +153,29 @@ class _CalculadoraPorcentajeScreenState
                     filled: true,
                     fillColor: const Color(0xFF0F172A).withOpacity(0.7),
                   ),
-                  onChanged: (_) => _calcularPorcentaje(),
+                ),
+                const SizedBox(height: 20),
+
+                // Botón Calcular (Acción explícita del usuario)
+                ElevatedButton.icon(
+                  onPressed: _calcularYGuardar,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.cyanAccent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 5,
+                  ),
+                  icon: const Icon(Icons.calculate),
+                  label: const Text(
+                    'Calcular y Guardar',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -193,7 +226,7 @@ class _CalculadoraPorcentajeScreenState
                     ),
                     if (_historial.isNotEmpty)
                       TextButton.icon(
-                        onPressed: _limpiarHistorial,
+                        onPressed: _limpiarTodo,
                         icon: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 20),
                         label: const Text(
                           'Limpiar',
@@ -204,19 +237,19 @@ class _CalculadoraPorcentajeScreenState
                 ),
                 const SizedBox(height: 10),
 
-                // Contenedor dinámico del historial con scroll seguro
+                // Contenedor del historial
                 _historial.isEmpty
                     ? const Padding(
                         padding: EdgeInsets.symmetric(vertical: 20.0),
                         child: Text(
-                          'No hay cálculos recientes',
+                          'No hay cálculos recientes en el historial',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.white54, fontStyle: FontStyle.italic),
                         ),
                       )
                     : ListView.builder(
-                        shrinkWrap: true, // Se adapta al contenido dentro del SingleChildScrollView
-                        physics: const NeverScrollableScrollPhysics(), // Evita conflictos de scroll
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
                         itemCount: _historial.length,
                         itemBuilder: (context, index) {
                           return Container(
@@ -232,7 +265,7 @@ class _CalculadoraPorcentajeScreenState
                                 const Icon(Icons.history, color: Colors.cyanAccent, size: 18),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                 child: Text(
+                                  child: Text(
                                     _historial[index],
                                     style: const TextStyle(color: Colors.white, fontSize: 14),
                                   ),
